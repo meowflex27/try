@@ -40,16 +40,24 @@ app.get('/movie/:id', async (req, res) => {
 </head>
 <body>
   <div id="title">${title} ${year ? `(${year})` : ''}</div>
-  <video id="video" controls autoplay poster="${backdropUrl}">
-    <source src="" type="video/mp4">
-  </video>
+  <video id="video" controls autoplay poster="${backdropUrl}"></video>
   <script>
     async function load() {
-      const res = await fetch('https://movie-proxy-gules.vercel.app/api/proxy?video=' + encodeURIComponent('https://example.com/video.mp4'));
+      const res = await fetch('https://railway-production-b773.up.railway.app/movie/${id}');
+      const data = await res.json();
       const video = document.getElementById('video');
-      const src = video.querySelector('source');
-      src.src = res.url; // or use static proxy URL if no streaming endpoint
-      video.load();
+
+      if (data.url && data.url.endsWith('.m3u8')) {
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(data.url);
+          hls.attachMedia(video);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = data.url;
+        }
+      } else if (data.url) {
+        video.src = data.url;
+      }
     }
     load();
   </script>
